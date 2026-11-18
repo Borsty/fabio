@@ -119,6 +119,7 @@ func TestProxyProducesCorrectXForwardedSomethingHeader(t *testing.T) {
 
 				// All these are set by Fabio.
 				//
+				"Forwarded":         {"for=127.0.0.1; proto=http; by=1.1.1.1; httpproto=http/1.1"}, // #1127
 				"X-Client-Ip":       {"127.0.0.1"},
 				"X-Forwarded-For":   {"127.0.0.1"},
 				"X-Forwarded-Host":  {"foo.com"},
@@ -139,6 +140,7 @@ func TestProxyProducesCorrectXForwardedSomethingHeader(t *testing.T) {
 			wantHeader: http.Header{
 				"Accept-Encoding":   {"gzip"},
 				"User-Agent":        {"Go-http-client/1.1"},
+				"Forwarded":         {"for=127.0.0.1; proto=http; by=1.1.1.1; httpproto=http/1.1"}, // #1127
 				"X-Client-Ip":       {"127.0.0.1"},
 				"X-Forwarded-For":   {"127.0.0.1"},
 				"X-Forwarded-Host":  {"foo.com"},
@@ -169,13 +171,14 @@ func TestProxyProducesCorrectXForwardedSomethingHeader(t *testing.T) {
 				"User-Agent":      {"Go-http-client/1.1"},
 
 				"Legit-Header1":     {"asdf"},
-				"X-Client-Ip":       {"127.0.0.1"},          // ???
-				"X-Forwarded-For":   {"3.3.3.3, 127.0.0.1"}, // trusted from req and appended
-				"X-Forwarded-Host":  {"foo.com"},            // ???
-				"X-Forwarded-Port":  {"443"},                // trusted from req
-				"X-Forwarded-Proto": {"https"},              // Repro for https://github.com/fabiolb/fabio/issues/1089
-				"X-Real-Ip":         {"3.3.3.3"},            // trusted from req
-				"X-Request-Id":      {"proxy-test-uuid"},    // ???
+				"Forwarded":         {"for=127.0.0.1; proto=https; by=1.1.1.1; httpproto=http/1.1"}, // #1127
+				"X-Client-Ip":       {"127.0.0.1"},                                                  // ???
+				"X-Forwarded-For":   {"3.3.3.3, 127.0.0.1"},                                         // trusted from req and appended
+				"X-Forwarded-Host":  {"example.com"},                                                // trusted from req, see #1127
+				"X-Forwarded-Port":  {"443"},                                                        // trusted from req
+				"X-Forwarded-Proto": {"https"},                                                      // Repro for https://github.com/fabiolb/fabio/issues/1089
+				"X-Real-Ip":         {"3.3.3.3"},                                                    // trusted from req
+				"X-Request-Id":      {"proxy-test-uuid"},                                            // ???
 			},
 		})
 	})
@@ -197,6 +200,7 @@ func TestProxyProducesCorrectXForwardedSomethingHeader(t *testing.T) {
 				"User-Agent":      {"Go-http-client/1.1"},
 
 				"Legit-Header1":     {"asdf"},
+				"Forwarded":         {"for=127.0.0.1; proto=http; by=1.1.1.1; httpproto=http/1.1"}, // #1127
 				"X-Client-Ip":       {"127.0.0.1"},
 				"X-Forwarded-For":   {"127.0.0.1"},
 				"X-Forwarded-Host":  {"foo.com"},

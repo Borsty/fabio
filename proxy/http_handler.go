@@ -33,17 +33,19 @@ func newHTTPProxy(target *url.URL, tr http.RoundTripper, flush time.Duration) ht
 				req.Out.Header.Set("X-Forwarded-For", xff)
 			}
 
-			// Preserve X-Forwarded-Proto from inbound request.
-			// This is secure only if deployed behind a trusted reverse proxy.
-			xfp := req.In.Header.Get("X-Forwarded-Proto")
-
-			// SetXForwarded will handle X-Forwarded-For (append), X-Forwarded-Host, and X-Forwarded-Proto
-			// Other headers (X-Forwarded-Port, X-Forwarded-Prefix, Forwarded) are already set by addHeaders()
+			// SetXForwarded appends the client IP to X-Forwarded-For and sets
+			// X-Forwarded-Host and X-Forwarded-Proto from fabio's own inbound connection.
 			req.SetXForwarded()
 
-			// Restore X-Forwarded-Proto.
-			if xfp != "" {
-				req.Out.Header.Set("X-Forwarded-Proto", xfp)
+			// httputil.ReverseProxy strips Forwarded, X-Forwarded-Host and
+			// X-Forwarded-Proto from req.Out before calling Rewrite. addHeaders()
+			// has already computed them on req.In (keeping values from a trusted
+			// upstream proxy unless ClearClientHeaders is set), so copy them back.
+			// See https://github.com/fabiolb/fabio/issues/1089 and #1127.
+			for _, h := range []string{"Forwarded", "X-Forwarded-Host", "X-Forwarded-Proto"} {
+				if v := req.In.Header.Get(h); v != "" {
+					req.Out.Header.Set(h, v)
+				}
 			}
 		},
 		FlushInterval: flush,
